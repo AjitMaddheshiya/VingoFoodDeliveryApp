@@ -20,6 +20,7 @@ function CreateEditShop() {
        const [frontendImage,setFrontendImage]=useState(myShopData?.image || null)
        const [backendImage,setBackendImage]=useState(null)
        const [loading,setLoading]=useState(false)
+       const [err,setErr]=useState("")
        const dispatch=useDispatch()
        const handleImage=(e)=>{
         const file=e.target.files[0]
@@ -29,6 +30,7 @@ function CreateEditShop() {
 
        const handleSubmit=async (e)=>{
         e.preventDefault()
+        setErr("")
         setLoading(true)
         try {
            const formData=new FormData()
@@ -42,10 +44,10 @@ function CreateEditShop() {
            const result=await axios.post(`${serverUrl}/api/shop/create-edit`,formData,{withCredentials:true})
            dispatch(setMyShopData(result.data))
           setLoading(false)
-          navigate("/")
+          navigate("/home")
         } catch (error) {
-            console.log(error)
             setLoading(false)
+            setErr(error?.response?.data?.message || error?.message || "Failed to save shop. Try again.")
         }
        }
     return (
@@ -96,9 +98,9 @@ function CreateEditShop() {
                         <input type="text" placeholder='Enter Shop Address' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500' onChange={(e)=>setAddress(e.target.value)}
                         value={address}/> 
                     </div>
-                    <button className='w-full bg-[#ff4d2d] text-white px-6 py-3 rounded-lg font-semibold shadow-md hover:bg-orange-600 hover:shadow-lg transition-all duration-200 cursor-pointer' disabled={loading}>
+                    {err && <p className="text-red-500 text-sm text-center">*{err}</p>}
+                    <button type="submit" className='w-full bg-[#ff4d2d] text-white px-6 py-3 rounded-lg font-semibold shadow-md hover:bg-orange-600 hover:shadow-lg transition-all duration-200 cursor-pointer' disabled={loading}>
                         {loading?<ClipLoader size={20} color='white'/>:"Save"}
-                    
                     </button>
                 </form>
             </div>
