@@ -19,6 +19,7 @@ function DeliveryBoy() {
 const [deliveryBoyLocation,setDeliveryBoyLocation]=useState(null)
 const [loading,setLoading]=useState(false)
 const [message,setMessage]=useState("")
+const [otpError,setOtpError]=useState("")
   useEffect(()=>{
 if(!socket || userData.role!=="deliveryBoy") return
 let watchId
@@ -67,8 +68,9 @@ const totalEarning=todayDeliveries.reduce((sum,d)=>sum + d.count*ratePerDelivery
      try {
       const result=await axios.get(`${serverUrl}/api/order/get-current-order`,{withCredentials:true})
     setCurrentOrder(result.data)
+    setShowOtpBox(false)
     } catch (error) {
-      console.log(error)
+      setCurrentOrder(null)
     }
   }
 
@@ -93,17 +95,17 @@ const totalEarning=todayDeliveries.reduce((sum,d)=>sum + d.count*ratePerDelivery
   },[socket])
   
   const sendOtp=async () => {
+    setOtpError("")
     setLoading(true)
     try {
-      const result=await axios.post(`${serverUrl}/api/order/send-delivery-otp`,{
+      await axios.post(`${serverUrl}/api/order/send-delivery-otp`,{
         orderId:currentOrder._id,shopOrderId:currentOrder.shopOrder._id
       },{withCredentials:true})
       setLoading(false)
-       setShowOtpBox(true)
-    console.log(result.data)
+      setShowOtpBox(true)
     } catch (error) {
-      console.log(error)
       setLoading(false)
+      setOtpError(error?.response?.data?.message || "Failed to send OTP. Try again.")
     }
   }
   const verifyOtp=async () => {
@@ -221,6 +223,7 @@ availableAssignments.map((a,index)=>(
         lat: currentOrder.deliveryAddress.latitude,
         lon: currentOrder.deliveryAddress.longitude
       }}} />
+{otpError && <p className="text-red-500 text-sm mt-2">{otpError}</p>}
 {!showOtpBox ? <button className='mt-4 w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' onClick={sendOtp} disabled={loading}>
 {loading?<ClipLoader size={20} color='white'/> :"Mark As Delivered"}
  </button>:<div className='mt-4 p-4 border rounded-xl bg-gray-50'>

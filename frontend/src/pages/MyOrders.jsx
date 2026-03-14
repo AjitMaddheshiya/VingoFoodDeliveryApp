@@ -14,12 +14,12 @@ const dispatch=useDispatch()
   useEffect(()=>{
 socket?.on('newOrder',(data)=>{
 if(data.shopOrders?.owner._id==userData._id){
-dispatch(setMyOrders([data,...myOrders]))
+dispatch(setMyOrders(prev=>[data,...(prev||[])]))
 }
 })
 
-socket?.on('update-status',({orderId,shopId,status,userId})=>{
-if(userId==userData._id){
+socket?.on('update-status',({orderId,shopId,status,userId,ownerId})=>{
+if(userId==userData._id || ownerId==userData._id){
   dispatch(updateRealtimeOrderStatus({orderId,shopId,status}))
 }
 })
@@ -28,7 +28,7 @@ return ()=>{
   socket?.off('newOrder')
   socket?.off('update-status')
 }
-  },[socket])
+  },[socket,userData._id,dispatch])
 
 
 

@@ -299,19 +299,26 @@ export const updateOrderStatus = async (req, res) => {
         await order.save()
         const updatedShopOrder = order.shopOrders.find(o => o.shop == shopId)
         await order.populate("shopOrders.shop", "name")
+        await order.populate("shopOrders.owner", "socketId")
         await order.populate("shopOrders.assignedDeliveryBoy", "fullName email mobile")
         await order.populate("user", "socketId")
 
         const io = req.app.get('io')
         if (io) {
-            const userSocketId = order.user.socketId
+            const payload = {
+                orderId: order._id,
+                shopId: updatedShopOrder.shop._id,
+                status: updatedShopOrder.status,
+                userId: String(order.user._id),
+                ownerId: updatedShopOrder.owner ? String(updatedShopOrder.owner._id) : null
+            }
+            const userSocketId = order.user?.socketId
             if (userSocketId) {
-                io.to(userSocketId).emit('update-status', {
-                    orderId: order._id,
-                    shopId: updatedShopOrder.shop._id,
-                    status: updatedShopOrder.status,
-                    userId: order.user._id
-                })
+                io.to(userSocketId).emit('update-status', payload)
+            }
+            const ownerSocketId = updatedShopOrder.owner?.socketId
+            if (ownerSocketId) {
+                io.to(ownerSocketId).emit('update-status', payload)
             }
         }
 
@@ -498,8 +505,12 @@ export const sendDeliveryOtp = async (req, res) => {
         shopOrder.deliveryOtp = otp
         shopOrder.otpExpires = Date.now() + 5 * 60 * 1000
         await order.save()
-        await sendDeliveryOtpMail(order.user, otp)
-        return res.status(200).json({ message: `Otp sent Successfuly to ${order?.user?.fullName}` })
+        try {
+            await sendDeliveryOtpMail(order.user, otp)
+        } catch (mailErr) {
+            console.log('Delivery OTP email failed:', mailErr?.message)
+        }
+        return res.status(200).json({ message: `Otp sent to ${order?.user?.fullName}` })
     } catch (error) {
         return res.status(500).json({ message: `delivery otp error ${error}` })
     }
@@ -520,6 +531,32 @@ export const verifyDeliveryOtp = async (req, res) => {
         shopOrder.status = "delivered"
         shopOrder.deliveredAt = Date.now()
         await order.save()
+
+        await order.populate("shopOrders.shop", "name")
+        await order.populate("shopOrders.owner", "socketId")
+        await order.populate("user", "socketId")
+        const io = req.app.get('io')
+        if (io) {
+            const userSocketId = order.user?.socketId
+            if (userSocketId) {
+                io.to(userSocketId).emit('update-status', {
+                    orderId: order._id,
+                    shopId: shopOrder.shop?._id,
+                    status: 'delivered',
+                    userId: String(order.user._id)
+                })
+            }
+            const ownerSocketId = shopOrder.owner?.socketId
+            if (ownerSocketId) {
+                io.to(ownerSocketId).emit('update-status', {
+                    orderId: order._id,
+                    shopId: shopOrder.shop?._id,
+                    status: 'delivered',
+                    ownerId: String(shopOrder.owner._id)
+                })
+            }
+        }
+
         await DeliveryAssignment.deleteOne({
             shopOrderId: shopOrder._id,
             order: order._id,

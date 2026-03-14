@@ -92,10 +92,9 @@ const userSlice = createSlice({
       const { orderId, shopId, status } = action.payload
       const order = state.myOrders.find(o => o._id == orderId)
       if (order) {
-        const shopOrder = order.shopOrders.find(so => so.shop._id == shopId)
-        if (shopOrder) {
-          shopOrder.status = status
-        }
+        const shopOrdersArr = Array.isArray(order.shopOrders) ? order.shopOrders : [order.shopOrders].filter(Boolean)
+        const shopOrder = shopOrdersArr.find(so => so?.shop?._id == shopId)
+        if (shopOrder) shopOrder.status = status
       }
     },
 
