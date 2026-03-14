@@ -27,7 +27,8 @@ import { io } from 'socket.io-client'
 import { setSocket, setCurrentCity, setCurrentState, setCurrentAddress, setShopsInMyCity, setItemsInMyCity } from './redux/userSlice'
 import { setLocation, setAddress as setMapAddress } from './redux/mapSlice'
 
-export const serverUrl="http://localhost:8000"
+export const serverUrl = "https://vingofooddeliveryapp-backend.onrender.com"
+
 function App() {
     const {userData, currentCity}=useSelector(state=>state.user)
     const dispatch=useDispatch()
