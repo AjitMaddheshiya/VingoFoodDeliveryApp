@@ -27,6 +27,7 @@ function SignUp() {
     const [loading,setLoading]=useState(false)
     const dispatch=useDispatch()
      const handleSignUp=async () => {
+        if(!fullName || !email || !password || !mobile || !role) return setErr('Please fill all fields');
         setLoading(true)
         try {
             const result=await axios.post(`${serverUrl}/api/auth/signup`,{
@@ -35,19 +36,22 @@ function SignUp() {
             dispatch(setUserData(result.data))
             setErr("")
             setLoading(false)
+            navigate('/home');
         } catch (error) {
-            setErr(error?.response?.data?.message)
+            setErr(error?.response?.data?.message || 'Sign up failed')
              setLoading(false)
         }
      }
 
      const handleGoogleAuth=async () => {
         if(!mobile){
-          return setErr("mobile no is required")
+          return setErr("Mobile number is required for Sign up with Google")
         }
+        setErr('')
+        setLoading(true)
+        try {
         const provider=new GoogleAuthProvider()
         const result=await signInWithPopup(auth,provider)
-  try {
     const {data}=await axios.post(`${serverUrl}/api/auth/google-auth`,{
         fullName:result.user.displayName,
         email:result.user.email,
@@ -55,8 +59,12 @@ function SignUp() {
         mobile
     },{withCredentials:true})
    dispatch(setUserData(data))
+   setLoading(false)
+   navigate('/home');
   } catch (error) {
-    console.log(error)
+    setLoading(false)
+    const msg = error?.response?.data?.message || error?.message || 'Google sign up failed'
+    setErr(msg.includes('auth/') ? 'Google sign up was cancelled or failed. Please try again.' : msg)
   }
      }
     return (
@@ -84,7 +92,7 @@ function SignUp() {
 
                 <div className='mb-4'>
                     <label htmlFor="mobile" className='block text-gray-700 font-medium mb-1'>Mobile</label>
-                    <input type="email" className='w-full border rounded-lg px-3 py-2 focus:outline-none ' placeholder='Enter your Mobile Number' style={{ border: `1px solid ${borderColor}` }} onChange={(e)=>setMobile(e.target.value)} value={mobile} required/>
+<input type="tel" className='w-full border rounded-lg px-3 py-2 focus:outline-none ' placeholder='Enter your Mobile Number' style={{ border: `1px solid ${borderColor}` }} onChange={(e)=>setMobile(e.target.value)} value={mobile} required/>
                 </div>
                 {/* password*/}
 
@@ -116,16 +124,15 @@ function SignUp() {
                     </div>
                 </div>
 
-            <button className={`w-full font-semibold py-2 rounded-lg transition duration-200 bg-[#ff4d2d] text-white hover:bg-[#e64323] cursor-pointer`} onClick={handleSignUp} disabled={loading}>
+<button type="button" className={`w-full font-semibold py-2 rounded-lg transition duration-200 bg-[#ff4d2d] text-white hover:bg-[#e64323] cursor-pointer`} onClick={handleSignUp} disabled={loading}>
                 {loading?<ClipLoader size={20} color='white'/>:"Sign Up"}
-            
             </button>
             {err && <p className='text-red-500 text-center my-[10px]'>*{err}</p>}
             
 
-            <button className='w-full mt-4 flex items-center justify-center gap-2 border rounded-lg px-4 py-2 transition cursor-pointer duration-200 border-gray-400 hover:bg-gray-100' onClick={handleGoogleAuth}>
+<button type="button" className='w-full mt-4 flex items-center justify-center gap-2 border rounded-lg px-4 py-2 transition cursor-pointer duration-200 border-gray-400 hover:bg-gray-100 disabled:opacity-70' onClick={handleGoogleAuth} disabled={loading}>
 <FcGoogle size={20}/>
-<span>Sign up with Google</span>
+<span>{loading ? 'Signing up...' : 'Sign up with Google'}</span>
             </button>
             <p className='text-center mt-6 cursor-pointer' onClick={()=>navigate("/signin")}>Already have an account ?  <span className='text-[#ff4d2d]'>Sign In</span></p>
             </div>

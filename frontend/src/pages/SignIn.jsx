@@ -24,6 +24,7 @@ function SignIn() {
     const [loading,setLoading]=useState(false)
     const dispatch=useDispatch()
      const handleSignIn=async () => {
+        if(!email || !password) return setErr('Please fill email and password');
         setLoading(true)
         try {
             const result=await axios.post(`${serverUrl}/api/auth/signin`,{
@@ -32,21 +33,28 @@ function SignIn() {
            dispatch(setUserData(result.data))
             setErr("")
             setLoading(false)
+            navigate('/home');
         } catch (error) {
-           setErr(error?.response?.data?.message)
+           setErr(error?.response?.data?.message || 'Sign in failed')
            setLoading(false)
         }
      }
      const handleGoogleAuth=async () => {
+       setErr('')
+       setLoading(true)
+       try {
              const provider=new GoogleAuthProvider()
              const result=await signInWithPopup(auth,provider)
-       try {
          const {data}=await axios.post(`${serverUrl}/api/auth/google-auth`,{
              email:result.user.email,
          },{withCredentials:true})
          dispatch(setUserData(data))
+         setLoading(false)
+         navigate('/home');
        } catch (error) {
-         console.log(error)
+         setLoading(false)
+         const msg = error?.response?.data?.message || error?.message || 'Google sign in failed'
+         setErr(msg.includes('auth/') ? 'Google sign in was cancelled or failed. Please try again.' : msg)
        }
           }
     return (
@@ -80,14 +88,14 @@ function SignIn() {
                 </div>
               
 
-            <button className={`w-full font-semibold py-2 rounded-lg transition duration-200 bg-[#ff4d2d] text-white hover:bg-[#e64323] cursor-pointer`} onClick={handleSignIn} disabled={loading}>
+<button type="button" className={`w-full font-semibold py-2 rounded-lg transition duration-200 bg-[#ff4d2d] text-white hover:bg-[#e64323] cursor-pointer`} onClick={handleSignIn} disabled={loading}>
                 {loading?<ClipLoader size={20} color='white'/>:"Sign In"}
             </button>
       {err && <p className='text-red-500 text-center my-[10px]'>*{err}</p>}
 
-            <button className='w-full mt-4 flex items-center justify-center gap-2 border rounded-lg px-4 py-2 transition cursor-pointer duration-200 border-gray-400 hover:bg-gray-100' onClick={handleGoogleAuth}>
+<button type="button" className='w-full mt-4 flex items-center justify-center gap-2 border rounded-lg px-4 py-2 transition cursor-pointer duration-200 border-gray-400 hover:bg-gray-100 disabled:opacity-70' onClick={handleGoogleAuth} disabled={loading}>
 <FcGoogle size={20}/>
-<span>Sign In with Google</span>
+<span>{loading ? 'Signing in...' : 'Sign In with Google'}</span>
             </button>
             <p className='text-center mt-6 cursor-pointer' onClick={()=>navigate("/signup")}>Want to create a new account ?  <span className='text-[#ff4d2d]'>Sign Up</span></p>
             </div>

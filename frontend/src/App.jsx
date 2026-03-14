@@ -27,7 +27,7 @@ import { io } from 'socket.io-client'
 import { setSocket, setCurrentCity, setCurrentState, setCurrentAddress, setShopsInMyCity, setItemsInMyCity } from './redux/userSlice'
 import { setLocation, setAddress as setMapAddress } from './redux/mapSlice'
 
-export const serverUrl = "https://vingofooddeliveryapp-backend.onrender.com"
+export const serverUrl = import.meta.env.VITE_API_URL || 'https://vingofooddeliveryapp-backend.onrender.com'
 
 function App() {
     const {userData, currentCity}=useSelector(state=>state.user)
@@ -69,7 +69,7 @@ useUpdateLocation()
   }, [userData, currentCity, dispatch])
 
   useEffect(()=>{
-const socketInstance=io(serverUrl,{withCredentials:true})
+const socketInstance=io('https://vingofooddeliveryapp-backend.onrender.com',{withCredentials:true})
 dispatch(setSocket(socketInstance))
 socketInstance.on('connect',()=>{
 if(userData){
@@ -83,19 +83,20 @@ return ()=>{
 
   return (
    <Routes>
-    <Route path='/signup' element={!userData?<SignUp/>:<Navigate to={"/"}/>}/>
-    <Route path='/signin' element={!userData?<SignIn/>:<Navigate to={"/"}/>}/>
-      <Route path='/forgot-password' element={!userData?<ForgotPassword/>:<Navigate to={"/"}/>}/>
-      <Route path='/' element={userData?<Home/>:<Navigate to={"/signin"}/>}/>
-<Route path='/create-edit-shop' element={userData?<CreateEditShop/>:<Navigate to={"/signin"}/>}/>
-<Route path='/add-item' element={userData?<AddItem/>:<Navigate to={"/signin"}/>}/>
-<Route path='/edit-item/:itemId' element={userData?<EditItem/>:<Navigate to={"/signin"}/>}/>
-<Route path='/cart' element={userData?<CartPage/>:<Navigate to={"/signin"}/>}/>
-<Route path='/checkout' element={userData?<CheckOut/>:<Navigate to={"/signin"}/>}/>
-<Route path='/order-placed' element={userData?<OrderPlaced/>:<Navigate to={"/signin"}/>}/>
-<Route path='/my-orders' element={userData?<MyOrders/>:<Navigate to={"/signin"}/>}/>
-<Route path='/track-order/:orderId' element={userData?<TrackOrderPage/>:<Navigate to={"/signin"}/>}/>
-<Route path='/shop/:shopId' element={userData?<Shop/>:<Navigate to={"/signin"}/>}/>
+    <Route path='/' element={userData ? <Navigate to="/home" /> : <Navigate to="/signin" />} />
+    <Route path='/signup' element={!userData ? <SignUp /> : <Navigate to="/" />}/>
+    <Route path='/signin' element={<SignIn />}/>
+    <Route path='/forgot-password' element={!userData ? <ForgotPassword /> : <Navigate to="/" />}/>
+    <Route path='/home' element={userData ? <Home /> : <Navigate to="/signin" />}/>
+    <Route path='/create-edit-shop' element={userData ? <CreateEditShop /> : <Navigate to="/signin" />}/>
+    <Route path='/add-item' element={userData ? <AddItem /> : <Navigate to="/signin" />}/>
+    <Route path='/edit-item/:itemId' element={userData ? <EditItem /> : <Navigate to="/signin" />}/>
+    <Route path='/cart' element={userData ? <CartPage /> : <Navigate to="/signin" />}/>
+    <Route path='/checkout' element={userData ? <CheckOut /> : <Navigate to="/signin" />}/>
+    <Route path='/order-placed' element={userData ? <OrderPlaced /> : <Navigate to="/signin" />}/>
+    <Route path='/my-orders' element={userData ? <MyOrders /> : <Navigate to="/signin" />}/>
+    <Route path='/track-order/:orderId' element={userData ? <TrackOrderPage /> : <Navigate to="/signin" />}/>
+    <Route path='/shop/:shopId' element={userData ? <Shop /> : <Navigate to="/signin" />}/>
    </Routes>
   )
 }
