@@ -34,10 +34,20 @@ function CheckOut() {
   const deliveryFee=totalAmount>500?0:40
   const AmountWithDeliveryFee=totalAmount+deliveryFee
 
+  const [isValid, setIsValid] = useState(false)
 
+  // Auto set location on mount
+  useEffect(() => {
+    if (userData?.location?.coordinates?.length === 2) {
+      getCurrentLocation()
+    }
+  }, [])
 
-
-
+  // Validate form
+  useEffect(() => {
+    const valid = cartItems?.length > 0 && totalAmount > 0 && location.lat && !isNaN(location.lat) && location.lon && !isNaN(location.lon) && addressInput.trim()
+    setIsValid(valid)
+  }, [cartItems, totalAmount, location, addressInput])
 
   const onDragEnd = (e) => {
     const { lat, lng } = e.target._latlng
@@ -73,7 +83,11 @@ function CheckOut() {
     }
   }
 
-  const handlePlaceOrder=async () => {
+const handlePlaceOrder=async () => {
+    if (!isValid) {
+      alert('Please complete delivery address and confirm location on map')
+      return
+    }
     try {
       const result=await axios.post(`${serverUrl}/api/order/place-order`,{
         paymentMethod,
@@ -97,6 +111,7 @@ function CheckOut() {
     
     } catch (error) {
       console.log(error)
+      alert('Order failed: ' + error.response?.data?.message || error.message)
     }
   }
 
@@ -225,7 +240,16 @@ const openRazorpayWindow=(orderId,razorOrder)=>{
 </div>
 </div>
         </section>
-        <button className='w-full bg-[#ff4d2d] hover:bg-[#e64526] text-white py-3 rounded-xl font-semibold' onClick={handlePlaceOrder}> {paymentMethod=="cod"?"Place Order":"Pay & Place Order"}</button>
+        <button 
+          className={`w-full text-white py-3 rounded-xl font-semibold transition-all ${isValid 
+            ? 'bg-[#ff4d2d] hover:bg-[#e64526] cursor-pointer shadow-lg' 
+            : 'bg-gray-400 cursor-not-allowed'}`} 
+          disabled={!isValid}
+          onClick={handlePlaceOrder}
+        > 
+          {paymentMethod=="cod" ? "Place Order" : "Pay & Place Order"} 
+          {!isValid && <span className='block text-sm mt-1'>(Complete address & confirm location)</span>}
+        </button>
 
       </div>
     </div>

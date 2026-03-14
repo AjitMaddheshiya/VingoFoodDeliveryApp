@@ -13,17 +13,16 @@ function useGetMyOrders() {
     try {
            const result=await axios.get(`${serverUrl}/api/order/my-orders`,{withCredentials:true})
             dispatch(setMyOrders(result.data))
-   
 
 
     } catch (error) {
         console.log(error)
     }
 }
+  const interval = setInterval(fetchOrders, 30000) // Poll every 30s
   fetchOrders()
-
- 
   
+  return () => clearInterval(interval)
   },[userData])
 }
 

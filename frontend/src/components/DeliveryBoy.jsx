@@ -106,17 +106,27 @@ const totalEarning=todayDeliveries.reduce((sum,d)=>sum + d.count*ratePerDelivery
       setLoading(false)
     }
   }
-   const verifyOtp=async () => {
+  const verifyOtp=async () => {
     setMessage("")
+    setLoading(true)
     try {
       const result=await axios.post(`${serverUrl}/api/order/verify-delivery-otp`,{
         orderId:currentOrder._id,shopOrderId:currentOrder.shopOrder._id,otp
       },{withCredentials:true})
     console.log(result.data)
     setMessage(result.data.message)
-    location.reload()
+    // Reset instead of reload
+    setOtp("")
+    setShowOtpBox(false)
+    setLoading(false)
+    // Refetch data
+    getCurrentOrder()
+    getAssignments()
+    handleTodayDeliveries()
     } catch (error) {
       console.log(error)
+      setLoading(false)
+      setMessage("Invalid OTP. Try again.")
     }
   }
 
@@ -134,9 +144,14 @@ const totalEarning=todayDeliveries.reduce((sum,d)=>sum + d.count*ratePerDelivery
  
 
   useEffect(()=>{
-getAssignments()
-getCurrentOrder()
-handleTodayDeliveries()
+const refetchAll = () => {
+  getAssignments()
+  getCurrentOrder()
+  handleTodayDeliveries()
+}
+refetchAll()
+const interval = setInterval(refetchAll, 30000) // Poll every 30s
+    return () => clearInterval(interval)
   },[userData])
   return (
     <div className='w-screen min-h-screen flex flex-col gap-5 items-center bg-[#fff9f6] overflow-y-auto'>

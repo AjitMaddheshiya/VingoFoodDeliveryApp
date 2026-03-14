@@ -22,12 +22,14 @@ import useUpdateLocation from './hooks/useUpdateLocation'
 import TrackOrderPage from './pages/TrackOrderPage'
 import Shop from './pages/Shop'
 import { useEffect } from 'react'
+import axios from 'axios'
 import { io } from 'socket.io-client'
-import { setSocket } from './redux/userSlice'
+import { setSocket, setCurrentCity, setCurrentState, setCurrentAddress, setShopsInMyCity, setItemsInMyCity } from './redux/userSlice'
+import { setLocation, setAddress as setMapAddress } from './redux/mapSlice'
 
 export const serverUrl="http://localhost:8000"
 function App() {
-    const {userData}=useSelector(state=>state.user)
+    const {userData, currentCity}=useSelector(state=>state.user)
     const dispatch=useDispatch()
   useGetCurrentUser()
 useUpdateLocation()
@@ -36,6 +38,34 @@ useUpdateLocation()
   useGetShopByCity()
   useGetItemsByCity()
   useGetMyOrders()
+
+  // Set currentCity from userData.location on login
+  useEffect(() => {
+    const setUserCity = async () => {
+      if (userData && !currentCity && userData.location && userData.location.coordinates && userData.location.coordinates.length === 2) {
+        const lat = userData.location.coordinates[1]
+        const lon = userData.location.coordinates[0]
+        dispatch(setLocation({ lat, lon }))
+        try {
+          const apiKey = import.meta.env.VITE_GEOAPIKEY
+          const result = await axios.get(`https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&format=json&apiKey=${apiKey}`)
+          const geoData = result?.data?.results[0]
+          if (geoData) {
+            dispatch(setCurrentCity(geoData.city || geoData.county))
+            dispatch(setCurrentState(geoData.state))
+            dispatch(setCurrentAddress(geoData.address_line2 || geoData.address_line1))
+            dispatch(setMapAddress(geoData.address_line2))
+            // Clear to refetch
+            dispatch(setShopsInMyCity([]))
+            dispatch(setItemsInMyCity([]))
+          }
+        } catch (error) {
+          console.log('Geoapify error:', error)
+        }
+      }
+    }
+    setUserCity()
+  }, [userData, currentCity, dispatch])
 
   useEffect(()=>{
 const socketInstance=io(serverUrl,{withCredentials:true})
