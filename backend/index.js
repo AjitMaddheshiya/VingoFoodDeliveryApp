@@ -35,10 +35,14 @@ app.set("io", io);
 
 app.use(
   cors({
-    origin: "*", // allow frontend from anywhere (Vercel included)
-    credentials: true,
+    origin: [
+      "http://localhost:5173",
+      "https://vingo-food-delivery-app-nine.vercel.app"
+    ],
+    credentials: true
   })
 );
+
 
 app.use(express.json());
 app.use(cookieParser());
