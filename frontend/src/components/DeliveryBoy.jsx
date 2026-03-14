@@ -64,13 +64,14 @@ const totalEarning=todayDeliveries.reduce((sum,d)=>sum + d.count*ratePerDelivery
     }
   }
 
-  const getCurrentOrder=async () => {
+  const getCurrentOrder=async (resetOtpBox = false) => {
      try {
       const result=await axios.get(`${serverUrl}/api/order/get-current-order`,{withCredentials:true})
     setCurrentOrder(result.data)
-    setShowOtpBox(false)
+    if (resetOtpBox) setShowOtpBox(false)
     } catch (error) {
       setCurrentOrder(null)
+      setShowOtpBox(false)
     }
   }
 
@@ -86,49 +87,57 @@ const totalEarning=todayDeliveries.reduce((sum,d)=>sum + d.count*ratePerDelivery
   }
 
   useEffect(()=>{
+    if (!socket) return
     socket.on('newAssignment',(data)=>{
-      setAvailableAssignments(prev=>([...prev,data]))
+      setAvailableAssignments(prev=>prev ? [...prev, data] : [data])
     })
-    return ()=>{
-      socket.off('newAssignment')
-    }
+    return ()=> socket.off('newAssignment')
   },[socket])
   
   const sendOtp=async () => {
+    if (!currentOrder?.shopOrder?._id) {
+      setOtpError("Order data is loading. Please wait and try again.")
+      return
+    }
     setOtpError("")
+    setShowOtpBox(true)
     setLoading(true)
     try {
       await axios.post(`${serverUrl}/api/order/send-delivery-otp`,{
-        orderId:currentOrder._id,shopOrderId:currentOrder.shopOrder._id
-      },{withCredentials:true})
-      setLoading(false)
-      setShowOtpBox(true)
+        orderId: String(currentOrder._id),
+        shopOrderId: String(currentOrder.shopOrder._id)
+      },{withCredentials:true,timeout:30000})
     } catch (error) {
+      const msg = error?.response?.data?.message || (error?.code==='ECONNABORTED' ? "Request timed out. Try again." : "Failed to send OTP. Try again.")
+      setOtpError(msg)
+      setShowOtpBox(false)
+    } finally {
       setLoading(false)
-      setOtpError(error?.response?.data?.message || "Failed to send OTP. Try again.")
     }
   }
   const verifyOtp=async () => {
+    if (!otp || otp.trim().length !== 4) {
+      setMessage("Enter the 4-digit OTP received by customer")
+      return
+    }
     setMessage("")
     setLoading(true)
     try {
       const result=await axios.post(`${serverUrl}/api/order/verify-delivery-otp`,{
-        orderId:currentOrder._id,shopOrderId:currentOrder.shopOrder._id,otp
-      },{withCredentials:true})
-    console.log(result.data)
-    setMessage(result.data.message)
-    // Reset instead of reload
+        orderId: String(currentOrder._id),
+        shopOrderId: String(currentOrder.shopOrder._id),
+        otp: otp.trim()
+      },{withCredentials:true,timeout:15000})
+    setMessage(result.data?.message || "Order Delivered!")
     setOtp("")
     setShowOtpBox(false)
-    setLoading(false)
-    // Refetch data
-    getCurrentOrder()
+    getCurrentOrder(true)
     getAssignments()
     handleTodayDeliveries()
     } catch (error) {
-      console.log(error)
-      setLoading(false)
-      setMessage("Invalid OTP. Try again.")
+    setMessage(error?.response?.data?.message || "Invalid OTP. Try again.")
+    } finally {
+    setLoading(false)
     }
   }
 
@@ -152,7 +161,7 @@ const refetchAll = () => {
   handleTodayDeliveries()
 }
 refetchAll()
-const interval = setInterval(refetchAll, 30000) // Poll every 30s
+const interval = setInterval(refetchAll, 10000) // Poll every 10s so delivery boys see new orders faster
     return () => clearInterval(interval)
   },[userData])
   return (
@@ -215,10 +224,7 @@ availableAssignments.map((a,index)=>(
 </div>
 
  <DeliveryBoyTracking data={{ 
-  deliveryBoyLocation:deliveryBoyLocation || {
-        lat: userData.location.coordinates[1],
-        lon: userData.location.coordinates[0]
-      },
+  deliveryBoyLocation: deliveryBoyLocation || (userData?.location?.coordinates?.length === 2 ? { lat: userData.location.coordinates[1], lon: userData.location.coordinates[0] } : { lat: 28.6139, lon: 77.2090 }),
       customerLocation: {
         lat: currentOrder.deliveryAddress.latitude,
         lon: currentOrder.deliveryAddress.longitude
@@ -231,7 +237,9 @@ availableAssignments.map((a,index)=>(
 <input type="text" className='w-full border px-3 py-2 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400' placeholder='Enter OTP' onChange={(e)=>setOtp(e.target.value)} value={otp}/>
 {message && <p className='text-center text-green-400 text-2xl mb-4'>{message}</p>}
 
-<button className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all" onClick={verifyOtp}>Submit OTP</button>
+<button type="button" className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all disabled:opacity-70 disabled:cursor-not-allowed" onClick={verifyOtp} disabled={loading}>
+{loading ? <ClipLoader size={18} color="white" /> : "Submit OTP"}
+</button>
   </div>}
 
   </div>}

@@ -227,7 +227,7 @@ export const updateOrderStatus = async (req, res) => {
                 location: {
                     $near: {
                         $geometry: { type: "Point", coordinates: [Number(longitude), Number(latitude)] },
-                        $maxDistance: 5000
+                        $maxDistance: 50000
                     }
                 }
             })
@@ -496,20 +496,22 @@ export const getOrderById = async (req, res) => {
 export const sendDeliveryOtp = async (req, res) => {
     try {
         const { orderId, shopOrderId } = req.body
+        if (!orderId || !shopOrderId) {
+            return res.status(400).json({ message: "orderId and shopOrderId required" })
+        }
         const order = await Order.findById(orderId).populate("user")
-        const shopOrder = order.shopOrders.id(shopOrderId)
-        if (!order || !shopOrder) {
-            return res.status(400).json({ message: "enter valid order/shopOrderid" })
+        if (!order) {
+            return res.status(400).json({ message: "order not found" })
+        }
+        const shopOrder = order.shopOrders.find(so => String(so._id) === String(shopOrderId))
+        if (!shopOrder) {
+            return res.status(400).json({ message: "shop order not found" })
         }
         const otp = Math.floor(1000 + Math.random() * 9000).toString()
         shopOrder.deliveryOtp = otp
         shopOrder.otpExpires = Date.now() + 5 * 60 * 1000
         await order.save()
-        try {
-            await sendDeliveryOtpMail(order.user, otp)
-        } catch (mailErr) {
-            console.log('Delivery OTP email failed:', mailErr?.message)
-        }
+        sendDeliveryOtpMail(order.user, otp).catch(err => console.log('Delivery OTP email failed:', err?.message))
         return res.status(200).json({ message: `Otp sent to ${order?.user?.fullName}` })
     } catch (error) {
         return res.status(500).json({ message: `delivery otp error ${error}` })
@@ -519,11 +521,13 @@ export const sendDeliveryOtp = async (req, res) => {
 export const verifyDeliveryOtp = async (req, res) => {
     try {
         const { orderId, shopOrderId, otp } = req.body
-        const order = await Order.findById(orderId).populate("user")
-        const shopOrder = order.shopOrders.id(shopOrderId)
-        if (!order || !shopOrder) {
-            return res.status(400).json({ message: "enter valid order/shopOrderid" })
+        if (!orderId || !shopOrderId) {
+            return res.status(400).json({ message: "orderId and shopOrderId required" })
         }
+        const order = await Order.findById(orderId).populate("user")
+        if (!order) return res.status(400).json({ message: "order not found" })
+        const shopOrder = order.shopOrders.find(so => String(so._id) === String(shopOrderId))
+        if (!shopOrder) return res.status(400).json({ message: "shop order not found" })
         if (shopOrder.deliveryOtp !== otp || !shopOrder.otpExpires || shopOrder.otpExpires < Date.now()) {
             return res.status(400).json({ message: "Invalid/Expired Otp" })
         }

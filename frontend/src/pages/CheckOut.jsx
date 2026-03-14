@@ -36,12 +36,26 @@ function CheckOut() {
 
   const [isValid, setIsValid] = useState(false)
 
-  // Auto set location on mount
+  // Auto set location on mount - use saved location or browser geolocation
   useEffect(() => {
     if (userData?.location?.coordinates?.length === 2) {
-      getCurrentLocation()
+      const lat = userData.location.coordinates[1]
+      const lon = userData.location.coordinates[0]
+      dispatch(setLocation({ lat, lon }))
+      getAddressByLatLng(lat, lon)
+    } else if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude
+          const lon = pos.coords.longitude
+          dispatch(setLocation({ lat, lon }))
+          getAddressByLatLng(lat, lon)
+        },
+        () => {},
+        { enableHighAccuracy: true }
+      )
     }
-  }, [])
+  }, [userData?.location])
 
   // Validate form
   useEffect(() => {
@@ -55,12 +69,25 @@ function CheckOut() {
     getAddressByLatLng(lat, lng)
   }
   const getCurrentLocation = () => {
-      const latitude=userData.location.coordinates[1]
-      const longitude=userData.location.coordinates[0]
-      dispatch(setLocation({ lat: latitude, lon: longitude }))
-      getAddressByLatLng(latitude, longitude)
-   
-
+    if (userData?.location?.coordinates?.length === 2) {
+      const lat = userData.location.coordinates[1]
+      const lon = userData.location.coordinates[0]
+      dispatch(setLocation({ lat, lon }))
+      getAddressByLatLng(lat, lon)
+      return
+    }
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude
+          const lon = pos.coords.longitude
+          dispatch(setLocation({ lat, lon }))
+          getAddressByLatLng(lat, lon)
+        },
+        () => {},
+        { enableHighAccuracy: true }
+      )
+    }
   }
 
   const getAddressByLatLng = async (lat, lng) => {
@@ -167,7 +194,7 @@ const openRazorpayWindow=(orderId,razorOrder)=>{
             <div className='h-64 w-full flex items-center justify-center'>
               <MapContainer
                 className={"w-full h-full"}
-                center={[location?.lat, location?.lon]}
+                center={[location?.lat ?? 28.6139, location?.lon ?? 77.2090]}
                 zoom={16}
               >
                 <TileLayer
