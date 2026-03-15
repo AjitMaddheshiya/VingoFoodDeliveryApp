@@ -72,19 +72,21 @@ export const getItemById = async (req, res) => {
 export const deleteItem = async (req, res) => {
     try {
         const itemId = req.params.itemId
-        const item = await Item.findByIdAndDelete(itemId)
-        if (!item) {
-            return res.status(400).json({ message: "item not found" })
+        const shop = await Shop.findOne({ owner: req.userId }).populate({
+            path: "items",
+            options: { sort: { updatedAt: -1 } }
+        })
+        if (!shop) {
+            return res.status(400).json({ message: "shop not found" })
         }
-        const shop = await Shop.findOne({ owner: req.userId })
-        shop.items = shop.items.filter(i => i !== item._id)
+        
+        shop.items = shop.items.filter(i => i.toString() !== itemId)
         await shop.save()
         await shop.populate({
             path: "items",
             options: { sort: { updatedAt: -1 } }
         })
-        return res.status(200).json(shop)
-
+        return res.status(200).json({ message: "Item deleted successfully" })
     } catch (error) {
         return res.status(500).json({ message: `delete item error ${error}` })
     }

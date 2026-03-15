@@ -12,7 +12,12 @@ function OwnerItemCard({data}) {
     const handleDelete=async () => {
       try {
         const result=await axios.get(`${serverUrl}/api/item/delete/${data._id}`,{withCredentials:true})
-        dispatch(setMyShopData(result.data))
+        if(result.data.message === "Item deleted successfully") {
+          console.log("Item deleted successfully")
+          // Refresh shop data to show updated list
+          const updatedResult = await axios.get(`${serverUrl}/api/shop/my-shop`,{withCredentials:true})
+          dispatch(setMyShopData(updatedResult.data))
+        }
       } catch (error) {
         console.log(error)
       }
