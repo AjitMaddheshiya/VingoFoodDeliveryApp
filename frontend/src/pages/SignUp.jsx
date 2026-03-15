@@ -44,9 +44,6 @@ function SignUp() {
      }
 
      const handleGoogleAuth=async () => {
-        if(!mobile){
-          return setErr("Mobile number is required for Sign up with Google")
-        }
         setErr('')
         setLoading(true)
         try {
@@ -56,7 +53,7 @@ function SignUp() {
         fullName:result.user.displayName,
         email:result.user.email,
         role,
-        mobile
+        mobile:mobile || undefined
     },{withCredentials:true})
    dispatch(setUserData(data))
    setLoading(false)

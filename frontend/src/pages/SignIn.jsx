@@ -46,8 +46,9 @@ function SignIn() {
              const provider=new GoogleAuthProvider()
              const result=await signInWithPopup(auth,provider)
          const {data}=await axios.post(`${serverUrl}/api/auth/google-auth`,{
-             email:result.user.email,
-         },{withCredentials:true})
+            fullName:result.user.displayName,
+            email:result.user.email,
+        },{withCredentials:true})
          dispatch(setUserData(data))
          setLoading(false)
          navigate('/home');

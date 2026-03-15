@@ -136,7 +136,10 @@ export const googleAuth=async (req,res) => {
         let user=await User.findOne({email})
         if(!user){
             user=await User.create({
-                fullName,email,mobile,role
+                fullName,
+                email,
+                mobile:mobile || undefined,
+                role:role || "user"
             })
         }
 
