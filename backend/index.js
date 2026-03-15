@@ -11,6 +11,7 @@ import userRouter from "./routes/user.routes.js";
 import itemRouter from "./routes/item.routes.js";
 import shopRouter from "./routes/shop.routes.js";
 import orderRouter from "./routes/order.routes.js";
+import testEmailRouter from "./routes/testEmail.routes.js"; // added this line
 
 import { socketHandler } from "./socket.js";
 
@@ -57,7 +58,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
-app.use("/api/order", orderRouter);
+app.use("/api/test-email", testEmailRouter);
 
 /* ================= SOCKET ================= */
 
