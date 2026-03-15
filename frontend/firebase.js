@@ -7,11 +7,11 @@ import { getAuth } from "firebase/auth";
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_APIKEY,
-  authDomain: "social-media-app-4890b.firebaseapp.com",
-  projectId: "vingo-food-delivery",
-  storageBucket: "vingo-food-delivery.firebasestorage.app",
-  messagingSenderId: "693314883513",
-  appId: "1:693314883513:web:4840c943ecf3fb61a33068"
+  authDomain: "vingo-food-delivery-9dd5d.firebaseapp.com",
+  projectId: "vingo-food-delivery-9dd5d",
+  storageBucket: "vingo-food-delivery-9dd5d.firebasestorage.app",
+  messagingSenderId: "423134688945",
+  appId: "1:423134688945:web:a7a954a0ece7fa3b14d490"
 };
 
 // Initialize Firebase
