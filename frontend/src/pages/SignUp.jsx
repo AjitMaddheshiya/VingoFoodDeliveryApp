@@ -48,20 +48,24 @@ function SignUp() {
         setLoading(true)
         try {
         const provider=new GoogleAuthProvider()
+        console.log("Starting Google signup...")
         const result=await signInWithPopup(auth,provider)
+        console.log("Google auth successful:", result.user)
     const {data}=await axios.post(`${serverUrl}/api/auth/google-auth`,{
         fullName:result.user.displayName,
         email:result.user.email,
         role,
         mobile:mobile || undefined
     },{withCredentials:true})
+    console.log("Backend auth successful:", data)
    dispatch(setUserData(data))
    setLoading(false)
    navigate('/home');
   } catch (error) {
+    console.error("Google signup error:", error)
     setLoading(false)
-    const msg = error?.response?.data?.message || error?.message || 'Google sign up failed'
-    setErr(msg.includes('auth/') ? 'Google sign up was cancelled or failed. Please try again.' : msg)
+    const msg = error?.response?.data?.message || error?.message || error?.code || 'Google sign up failed'
+    setErr(msg.includes('auth/') ? `Google sign up error: ${error.code} - Please try again.` : msg)
   }
      }
     return (
