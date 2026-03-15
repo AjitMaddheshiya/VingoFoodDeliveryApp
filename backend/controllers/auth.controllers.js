@@ -77,29 +77,58 @@ return res.status(200).json({message:"log out successfully"})
     }
 }
 
-export const sendOtp=async (req,res) => {
-  try {
-    const {email}=req.body
-    const user=await User.findOne({email})
-    if(!user){
-       return res.status(400).json({message:"User does not exist."})
+export const sendTestEmail=async (req,res) => {
+    try {
+        const {email}=req.body
+        if(!email){
+            return res.status(400).json({message:"email is required"})
+        }
+        
+        // Send email
+        await sendOtpMail(email,"Test Email")
+        
+        return res.status(200).json({message:"test email sent successfully"})
+        
+    } catch (error) {
+        return res.status(500).json({message:`send test email error ${error}`})
     }
-    const otp=Math.floor(1000 + Math.random() * 9000).toString()
-    user.resetOtp=otp
-    user.otpExpires=Date.now()+5*60*1000
-    user.isOtpVerified=false
-    await user.save()
-    await sendOtpMail(email,otp)
-    return res.status(200).json({message:"otp sent successfully"})
-  } catch (error) {
-     return res.status(500).json(`send otp error ${error}`)
-  }  
+}
+
+export const sendOtp=async (req,res) => {
+    try {
+        const {email}=req.body
+        if(!email){
+            return res.status(400).json({message:"email is required"})
+        }
+        
+        // Generate OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString()
+        
+        // Save OTP to user
+        let user = await User.findOne({email})
+        if(!user){
+            user = await User.create({email,otp,otpExpires:Date.now() + 5*60*1000})
+        }else{
+            user.otp = otp
+            user.otpExpires = Date.now() + 5*60*1000
+            await user.save()
+        }
+        
+        // Send email
+        await sendOtpMail(email,otp)
+        
+        return res.status(200).json({message:"otp sent successfully",otp})
+        
+    } catch (error) {
+        return res.status(500).json({message:`send otp error ${error}`})
+    }
 }
 
 export const verifyOtp=async (req,res) => {
     try {
         const {email,otp}=req.body
         const user=await User.findOne({email})
+        if(!user || user.otp!=otp || user.otpExpires<Date.now()){
         if(!user || user.resetOtp!=otp || user.otpExpires<Date.now()){
             return res.status(400).json({message:"invalid/expired otp"})
         }
