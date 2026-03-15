@@ -17,6 +17,5 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-auth.settings.authDomain = 'vingo-food-delivery-app-nine.vercel.app';
 
 export { app, auth }

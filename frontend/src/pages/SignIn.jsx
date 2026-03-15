@@ -44,9 +44,6 @@ function SignIn() {
        setLoading(true)
        try {
              const provider=new GoogleAuthProvider()
-             provider.setCustomParameters({
-               'redirect_uri': 'https://vingo-food-delivery-app-nine.vercel.app'
-             });
              console.log("Starting Google auth...")
              const result=await signInWithPopup(auth,provider)
              console.log("Google auth successful:", result.user)
